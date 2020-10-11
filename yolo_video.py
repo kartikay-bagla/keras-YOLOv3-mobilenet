@@ -1,7 +1,8 @@
 import sys
 import argparse
-from yolo import YOLO, detect_video
+from yolo import YOLO, detect_video, live_detect
 from PIL import Image
+import matplotlib.pyplot as plt
 
 def detect_img(yolo):
     while True:
@@ -13,7 +14,7 @@ def detect_img(yolo):
             continue
         else:
             r_image = yolo.detect_image(image)
-            r_image.show()
+            r_image.save("test_out.jpg")
     yolo.close_session()
 
 FLAGS = None
@@ -48,6 +49,11 @@ if __name__ == '__main__':
         '--image', default=False, action="store_true",
         help='Image detection mode, will ignore all positional arguments'
     )
+
+    parser.add_argument(
+        '--webcam', default=False, action="store_true",
+        help='Will detect live from webcam, will ignore all positional arguments'
+    )
     '''
     Command line positional arguments -- for video detection mode
     '''
@@ -71,6 +77,10 @@ if __name__ == '__main__':
         if "input" in FLAGS:
             print(" Ignoring remaining command line arguments: " + FLAGS.input + "," + FLAGS.output)
         detect_img(YOLO(**vars(FLAGS)))
+    if FLAGS.webcam:
+        print("Webcam mode")
+        live_detect(YOLO(**vars(FLAGS)))
+    
     elif "input" in FLAGS:
         detect_video(YOLO(**vars(FLAGS)), FLAGS.input, FLAGS.output)
     else:

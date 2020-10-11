@@ -20,8 +20,8 @@ from keras.utils import multi_gpu_model
 
 class YOLO(object):
     _defaults = {
-        "model_path": 'model_data/yolo.h5',
-        "anchors_path": 'model_data/yolo_anchors.txt',
+        "model_path": 'model_data/tiny_yolo.h5',
+        "anchors_path": 'model_data/tiny_yolo_anchors.txt',
         "classes_path": 'model_data/coco_classes.txt',
         "score" : 0.3,
         "iou" : 0.45,
@@ -169,6 +169,41 @@ class YOLO(object):
     def close_session(self):
         self.sess.close()
 
+def live_detect(yolo):
+    import cv2
+    vid = cv2.VideoCapture(0)
+    accum_time = 0
+    curr_fps = 0
+    fps = "FPS: ??"
+    prev_time = timer()
+    cv2.namedWindow("result", cv2.WINDOW_NORMAL)
+    while True:
+        ret, frame = vid.read() 
+        if frame is not None:
+            image = Image.fromarray(frame)
+            image = yolo.detect_image(image)
+            result = np.asarray(image)
+            curr_time = timer()
+            exec_time = curr_time - prev_time
+            prev_time = curr_time
+            accum_time = accum_time + exec_time
+            curr_fps = curr_fps + 1
+            if accum_time > 1:
+                accum_time = accum_time - 1
+                fps = "FPS: " + str(curr_fps)
+                curr_fps = 0
+            cv2.putText(result, text=fps, org=(3, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.50, color=(255, 0, 0), thickness=2)
+            cv2.imshow("result", result)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("q"):
+                break
+        else:
+            out.release()
+            break
+    cv2.destroyAllWindows()
+    yolo.close_session()
+
 def detect_video(yolo, video_path, output_path=""):
     import cv2
     vid = cv2.VideoCapture(video_path)
@@ -186,27 +221,34 @@ def detect_video(yolo, video_path, output_path=""):
     curr_fps = 0
     fps = "FPS: ??"
     prev_time = timer()
+    cv2.namedWindow("result", cv2.WINDOW_NORMAL)
     while True:
         return_value, frame = vid.read()
-        image = Image.fromarray(frame)
-        image = yolo.detect_image(image)
-        result = np.asarray(image)
-        curr_time = timer()
-        exec_time = curr_time - prev_time
-        prev_time = curr_time
-        accum_time = accum_time + exec_time
-        curr_fps = curr_fps + 1
-        if accum_time > 1:
-            accum_time = accum_time - 1
-            fps = "FPS: " + str(curr_fps)
-            curr_fps = 0
-        cv2.putText(result, text=fps, org=(3, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                    fontScale=0.50, color=(255, 0, 0), thickness=2)
-        cv2.namedWindow("result", cv2.WINDOW_NORMAL)
-        cv2.imshow("result", result)
-        if isOutput:
-            out.write(result)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        
+        if frame is not None:
+            image = Image.fromarray(frame)
+            image = yolo.detect_image(image)
+            result = np.asarray(image)
+            curr_time = timer()
+            exec_time = curr_time - prev_time
+            prev_time = curr_time
+            accum_time = accum_time + exec_time
+            curr_fps = curr_fps + 1
+            if accum_time > 1:
+                accum_time = accum_time - 1
+                fps = "FPS: " + str(curr_fps)
+                curr_fps = 0
+            cv2.putText(result, text=fps, org=(3, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.50, color=(255, 0, 0), thickness=2)
+            cv2.imshow("result", result)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("q"):
+                break
+            if isOutput:
+                out.write(result)
+        else:
+            out.release()
             break
+    cv2.destroyAllWindows()
     yolo.close_session()
 
